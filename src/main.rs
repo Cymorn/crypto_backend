@@ -1,8 +1,21 @@
 use axum::{
     routing::get,
     extract::Path,
+    response::Json,
+    http::StatusCode,
     Router,
 };
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct WalletResponse {
+    address: String,
+    valid: bool,
+}
+
+fn is_valid_wallet(address: &str) -> bool {
+    address.len() >= 5
+}
 
 #[tokio::main]
 async fn main() {
@@ -23,6 +36,17 @@ async fn health_check() -> &'static str {
     "OK"
 }
 
-async fn wallet_handler(Path(address): Path<String>) -> String {
-    format!("Wallet address received: {}", address)
+async fn wallet_handler(
+    Path(address): Path<String>,
+) -> Result<Json<WalletResponse>, StatusCode> {
+    if !is_valid_wallet(&address) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let response = WalletResponse {
+        address,
+        valid: true,
+    };
+
+    Ok(Json(response))
 }
